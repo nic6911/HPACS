@@ -67,8 +67,6 @@ void b5PushCallback(void *ptr)
   Kd = (float)(KdMem*0.001);
   x0.getValue(&setPointMem);
   setPoint = (float)(setPointMem*0.1);
-  //uint16_t KpMem = (uint16_t)(Kp*1000);
-  Serial.println(KdMem);
   EEPROM.writeLong(0,KpMem);
   EEPROM.writeLong(4,KiMem);
   EEPROM.writeLong(8,KdMem);
@@ -117,8 +115,6 @@ void setup(){
   uint32_t KiMem = EEPROM.readLong(4);
   uint32_t KdMem = EEPROM.readLong(8);
   uint32_t setPointMem = EEPROM.readLong(12);
-  Serial.begin(9600);
-  Serial.println(KdMem);
   Kp = (float)KpMem*0.001;
   Ki = (float)KiMem*0.001;
   Kd = (float)KdMem*0.001;
@@ -219,7 +215,6 @@ uint8_t Controller(float error)
 {
   float limit = 100.0;
   float y;
-  static float yOld;
   static float integralOld;
   static float errorOld;
   static int i;
@@ -234,9 +229,9 @@ uint8_t Controller(float error)
   i++;
 
   // Anti wind-up using clamping of the integrator
-  if((yOld>limit && error > 0)|| (yOld<0 && error < 0))
+  if(error<0)
   {
-    integral = integralOld;
+    integral = 0;
   }
   else
   {
@@ -245,13 +240,13 @@ uint8_t Controller(float error)
  
   y = (integral + Kp*error + Kd*der);
   
-  yOld = y;
   if(y<0)
   {
     y=0;
   }
   if(y>limit)
   {
+    integral = integralOld;
     y=limit;
   }
   
