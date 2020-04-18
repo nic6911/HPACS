@@ -17,6 +17,11 @@ The code is implemented on an Arduino Mega and uses two of the 16-bit timers for
 I use a cheap WASCO Hot Plate, a cheap SS-relay, a Dallas onewire temperature sensor an Arduino Mega and a Nextion 3.2" HMI interface/display.
 
 ## License
+For my sake this license will apply:
 <a href="http://www.wtfpl.net/"><img
        src="http://www.wtfpl.net/wp-content/uploads/2012/12/wtfpl-badge-4.png"
        width="80" height="15" alt="WTFPL" /></a>
+       
+However, I have found the buttons for the HMI here: https://www.uihere.com/free-graphics/off-and-on-button-set-ai-eps-file-131170
+Where it says "For Personal Use" under licensing - I.e. no commercialization of HPACS unless you change those buttons ;)
+Also the disk icon and the hot surface warning I found somewhere at some point - but I can't seem to find them again...
