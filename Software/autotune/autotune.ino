@@ -55,27 +55,26 @@ NexTouch *nex_listen_list[] =
 void b5PushCallback(void *ptr)
 {
   b5.detachPush();  // Button press detached to avoid multiple presses to save
-  uint32_t number2 = 0;
-  x2.getValue(&number2);
-  Kp = (float)(number2*0.001);
-  x3.getValue(&number2);
-  Ki = (float)(number2*0.001);
-  x4.getValue(&number2);
-  Kd = (float)(number2*0.001);
-  x0.getValue(&number2);
-  setPoint = (float)(number2*0.1);
-  uint16_t KpMem = (uint16_t)(Kp*1000);
-  EEPROM.write(0,KpMem>>8);
-  EEPROM.write(1,KpMem);
-  uint16_t KiMem = (uint16_t)(Ki*1000);
-  EEPROM.write(2,KiMem>>8);
-  EEPROM.write(3,KiMem);
-  uint16_t KdMem = (uint16_t)(Kd*10);
-  EEPROM.write(4,KdMem>>8);
-  EEPROM.write(5,KdMem);
-  uint16_t setPointMem = (uint16_t)(setPoint*10);
-  EEPROM.write(6,setPointMem>>8);
-  EEPROM.write(7,setPointMem);
+  uint32_t setPointMem = 0;
+  uint32_t KpMem = 0;
+  uint32_t KiMem = 0;
+  uint32_t KdMem = 0;
+  x2.getValue(&KpMem);
+  Kp = (float)(KpMem*0.001);
+  x3.getValue(&KiMem);
+  Ki = (float)(KiMem*0.001);
+  x4.getValue(&KdMem);
+  Kd = (float)(KdMem*0.001);
+  x0.getValue(&setPointMem);
+  setPoint = (float)(setPointMem*0.1);
+  //uint16_t KpMem = (uint16_t)(Kp*1000);
+  EEPROM.write(0,KpMem>>24);EEPROM.write(1,KpMem>>16);EEPROM.write(2,KpMem>>8);EEPROM.write(3,KpMem);
+  //uint16_t KiMem = (uint16_t)(Ki*1000);
+  EEPROM.write(4,KiMem>>24);EEPROM.write(5,KiMem>>16);EEPROM.write(6,KiMem>>8);EEPROM.write(7,KiMem);
+  //uint16_t KdMem = (uint16_t)(Kd*10);
+  EEPROM.write(8,KdMem>>24);EEPROM.write(9,KdMem>>16);EEPROM.write(10,KdMem>>8);EEPROM.write(11,KdMem);
+  //uint16_t setPointMem = (uint16_t)(setPoint*10);
+  EEPROM.write(12,setPointMem>>24);EEPROM.write(13,setPointMem>>16);EEPROM.write(14,setPointMem>>8);EEPROM.write(15,setPointMem);
   Serial1.print("b5.pic=");Serial1.print(10);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
 }
 void b4PushCallback(void *ptr)
@@ -116,16 +115,20 @@ void x4PushCallback(void *ptr)
 
 void setup(){
   // Load PID and setpoint from EEPROM
-  uint32_t KpMem = (EEPROM.read(0)<<8)|EEPROM.read(1);
-  uint32_t KiMem = (EEPROM.read(2)<<8)|EEPROM.read(3);
-  uint32_t KdMem = (EEPROM.read(4)<<8)|EEPROM.read(5);
-  uint16_t setPointMem = (EEPROM.read(6)<<8)|EEPROM.read(7);
-  
+  uint32_t KpMem = EEPROM.read(0)<<24|EEPROM.read(1)<<16;EEPROM.read(2)<<8|EEPROM.read(3);
+  uint32_t KiMem = EEPROM.read(4)<<24|EEPROM.read(5)<<16;EEPROM.read(6)<<8|EEPROM.read(7);
+  uint32_t KdMem = EEPROM.read(8)<<24|EEPROM.read(9)<<16;EEPROM.read(10)<<8|EEPROM.read(11);
+  uint32_t setPointMem = EEPROM.read(12)<<24|EEPROM.read(13)<<16;EEPROM.read(14)<<8|EEPROM.read(15);
+  Serial.begin(9600);
   Kp = (float)KpMem*0.001;
   Ki = (float)KiMem*0.001;
-  Kd = (float)KdMem*0.1;
-
+  Kd = (float)KdMem*0.001;
+  Serial.println(Kp);
+  Serial.println(Ki);
+  Serial.println(Kd);
+  
   setPoint = (float)setPointMem*0.1;
+  Serial.println(setPoint);
   Serial1.begin(9600);
   pinMode(8, OUTPUT);
   digitalWrite(8,HIGH);
@@ -136,7 +139,7 @@ void setup(){
   //Send loaded values to display
   Serial1.print("x2.val=");Serial1.print(KpMem);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
   Serial1.print("x3.val=");Serial1.print(KiMem);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
-  Serial1.print("x4.val=");Serial1.print(KdMem*100);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
+  Serial1.print("x4.val=");Serial1.print(KdMem);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
   Serial1.print("x0.val=");Serial1.print(setPointMem);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
   Serial1.print("va1.val=");Serial1.print(0);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
   Serial1.print("va2.val=");Serial1.print(0);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
@@ -431,9 +434,9 @@ void tuning()
     Ki = (0.4*Ku)/Tu;
     Kd = Ku*Tu*0.06;
     stateMachine = OFF;
-    Serial1.print("x2.val=");Serial1.print((uint32_t)(Kp*10000));Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
-    Serial1.print("x3.val=");Serial1.print((uint32_t)(Ki*10000));Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
-    Serial1.print("x4.val=");Serial1.print((uint32_t)(Kd*10000));Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
+    Serial1.print("x2.val=");Serial1.print((uint32_t)(Kp*1000));Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
+    Serial1.print("x3.val=");Serial1.print((uint32_t)(Ki*1000));Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
+    Serial1.print("x4.val=");Serial1.print((uint32_t)(Kd*1000));Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
     Serial1.print("b5.pic=");Serial1.print(7);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);// Save icon is gray
     Serial1.print("va1.val=");Serial1.print(0);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
     Serial1.print("va2.val=");Serial1.print(0);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
