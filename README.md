@@ -13,6 +13,9 @@ The real background story is that partly I promised my dad to make a temperature
 ## Arduino based
 The code is implemented on an Arduino Mega and uses two of the 16-bit timers for "PWM" and control loop. Furhtermore a Nextion 3.2" basic HMI panel is used. I am not a software engineer so my coding may ot be optimal or directly intuitive to others...
 
+### Dependencies
+I use a couple of libraries in the code: "DallasTemperature", "EEPROMex", "ITEADLIB_Arduino_Nextion-master" and the more commonly known "OneWire".
+
 ## Hardware
 I use a cheap WASCO Hot Plate, a cheap SS-relay, a Dallas onewire temperature sensor an Arduino Mega and a Nextion 3.2" HMI interface/display.
 

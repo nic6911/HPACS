@@ -1,7 +1,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <Nextion.h>//Remember to go into config.h for the library and change Serial1 to Serial1 !
-#include <EEPROM.h>
+#include <EEPROMex.h>
 
 // Defines
 #define ONE_WIRE_BUS 2
@@ -68,13 +68,11 @@ void b5PushCallback(void *ptr)
   x0.getValue(&setPointMem);
   setPoint = (float)(setPointMem*0.1);
   //uint16_t KpMem = (uint16_t)(Kp*1000);
-  EEPROM.write(0,KpMem>>24);EEPROM.write(1,KpMem>>16);EEPROM.write(2,KpMem>>8);EEPROM.write(3,KpMem);
-  //uint16_t KiMem = (uint16_t)(Ki*1000);
-  EEPROM.write(4,KiMem>>24);EEPROM.write(5,KiMem>>16);EEPROM.write(6,KiMem>>8);EEPROM.write(7,KiMem);
-  //uint16_t KdMem = (uint16_t)(Kd*10);
-  EEPROM.write(8,KdMem>>24);EEPROM.write(9,KdMem>>16);EEPROM.write(10,KdMem>>8);EEPROM.write(11,KdMem);
-  //uint16_t setPointMem = (uint16_t)(setPoint*10);
-  EEPROM.write(12,setPointMem>>24);EEPROM.write(13,setPointMem>>16);EEPROM.write(14,setPointMem>>8);EEPROM.write(15,setPointMem);
+  Serial.println(KdMem);
+  EEPROM.writeLong(0,KpMem);
+  EEPROM.writeLong(4,KiMem);
+  EEPROM.writeLong(8,KdMem);
+  EEPROM.writeLong(12,setPointMem);
   Serial1.print("b5.pic=");Serial1.print(10);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
 }
 void b4PushCallback(void *ptr)
@@ -115,20 +113,17 @@ void x4PushCallback(void *ptr)
 
 void setup(){
   // Load PID and setpoint from EEPROM
-  uint32_t KpMem = EEPROM.read(0)<<24|EEPROM.read(1)<<16;EEPROM.read(2)<<8|EEPROM.read(3);
-  uint32_t KiMem = EEPROM.read(4)<<24|EEPROM.read(5)<<16;EEPROM.read(6)<<8|EEPROM.read(7);
-  uint32_t KdMem = EEPROM.read(8)<<24|EEPROM.read(9)<<16;EEPROM.read(10)<<8|EEPROM.read(11);
-  uint32_t setPointMem = EEPROM.read(12)<<24|EEPROM.read(13)<<16;EEPROM.read(14)<<8|EEPROM.read(15);
+  uint32_t KpMem = EEPROM.readLong(0);
+  uint32_t KiMem = EEPROM.readLong(4);
+  uint32_t KdMem = EEPROM.readLong(8);
+  uint32_t setPointMem = EEPROM.readLong(12);
   Serial.begin(9600);
+  Serial.println(KdMem);
   Kp = (float)KpMem*0.001;
   Ki = (float)KiMem*0.001;
   Kd = (float)KdMem*0.001;
-  Serial.println(Kp);
-  Serial.println(Ki);
-  Serial.println(Kd);
-  
   setPoint = (float)setPointMem*0.1;
-  Serial.println(setPoint);
+  
   Serial1.begin(9600);
   pinMode(8, OUTPUT);
   digitalWrite(8,HIGH);
