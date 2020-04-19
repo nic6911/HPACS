@@ -11,6 +11,16 @@
 #define ABOVE 1
 #define BELOW 0
 
+//********* CONTROL SELECTION ****************//
+// ONLY SELECT ONE !!!
+//#define PCONTROL
+//#define PICONTROL
+//#define PDCONTROL
+//#define CLASSICPID
+//#define PESSENCONTROL
+//#define SOMEOVERSHOOT
+#define NOOVERSHOOT
+
 // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
 OneWire oneWire(ONE_WIRE_BUS);
 
@@ -28,6 +38,10 @@ uint8_t ontime = 0;
 uint8_t stateMachine = OFF;
 bool initTuning = 0;
 uint8_t tempLimit = 100;// We do not allow more than 100 degree temperatures
+// Controller variables
+float integralOld;
+float errorOld;
+float yOld;
 
 //********* SETUP OF NEXTION EVENTS ****************//
 NexButton b0 = NexButton(0,3,"b0");//AUTOTUNE
@@ -65,8 +79,6 @@ void b5PushCallback(void *ptr)
   Ki = (float)(KiMem*0.001);
   x4.getValue(&KdMem);
   Kd = (float)(KdMem*0.01);
-  Serial.println(Kd);
-  Serial.println(KdMem);
   x0.getValue(&setPointMem);
   setPoint = (float)(setPointMem*0.1);
   EEPROM.writeLong(0,KpMem);
@@ -121,7 +133,6 @@ void setup(){
   Ki = (float)KiMem*0.001;
   Kd = (float)KdMem*0.01;
   setPoint = (float)setPointMem*0.1;
-  Serial.begin(9600);
   Serial1.begin(9600);
   pinMode(8, OUTPUT);
   digitalWrite(8,HIGH);
@@ -194,6 +205,10 @@ ISR(TIMER5_COMPA_vect){//timer5 interrupt 1Hz
  {
   ontime = 0;
   initTuning = 1;
+  // Reset controller
+  integralOld = 0;
+  errorOld = 0;
+  yOld = 0;
  }
  else if(stateMachine == AUTOTUNE)
  {
@@ -217,12 +232,9 @@ uint8_t Controller(float error)
 {
   float limit = 100.0;
   float y;
-  static float integralOld;
-  static float errorOld;
   static int i;
   float integral;
   float der;
-  static float yOld;
   
   der=error-errorOld;// Do the derivative over two samples - could be done on more samples or on a filtered signal instead... Essentially this is downsampling and thus kind of an increase of Kd as it is implemented here...
   if(i>1){
@@ -422,10 +434,45 @@ void tuning()
     // Calculate ultimate period and gain
     Tu = avgDeltaTime;
     Ku = (4*duty)/(PI*avgDeltaT);
+    #ifdef PCONTROL
+    // P-control
+    Kp = 0.5*Ku;
+    Ki = 0;
+    Kd = 0;
+    #endif
+    #ifdef PICONTROL
+    // PI-control
+    Kp = 0.45*Ku;//4.66
+    Ki = 0.54*Ku/Tu;//0.004
+    Kd = 0;
+    #endif
+    #ifdef PDCONTROL
+    // PD-control
+    Kp = 0.8*Ku;
+    Ki = 0;
+    Kd = Ku*Tu*0.1;
+    #endif
+    #ifdef CLASSICPID
+    Kp = 0.6*Ku;
+    Ki = 1.2*Ku/Tu;
+    Kd = Ku*Tu*0.075;
+    #endif
+    #ifdef PESSENCONTROL
+    Kp = 0.7*Ku;
+    Ki = 1.75*Ku/Tu;
+    Kd = Ku*Tu*0.105;
+    #endif
+    #ifdef SOMEOVERSHOOT
+    Kp = 0.333*Ku;
+    Ki = 0.666*Ku/Tu;
+    Kd = Ku*Tu*0.111;
+    #endif
+    #ifdef NOOVERSHOOT
     // Ziegler Nichols no overshoot PID parameters with lowered Kd
     Kp = Ku*0.2;
     Ki = (0.4*Ku)/Tu;
     Kd = Ku*Tu*0.06;
+    #endif
     stateMachine = OFF;
     Serial1.print("x2.val=");Serial1.print((uint32_t)(Kp*1000));Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
     Serial1.print("x3.val=");Serial1.print((uint32_t)(Ki*1000));Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
