@@ -64,7 +64,9 @@ void b5PushCallback(void *ptr)
   x3.getValue(&KiMem);
   Ki = (float)(KiMem*0.001);
   x4.getValue(&KdMem);
-  Kd = (float)(KdMem*0.001);
+  Kd = (float)(KdMem*0.01);
+  Serial.println(Kd);
+  Serial.println(KdMem);
   x0.getValue(&setPointMem);
   setPoint = (float)(setPointMem*0.1);
   EEPROM.writeLong(0,KpMem);
@@ -117,9 +119,9 @@ void setup(){
   uint32_t setPointMem = EEPROM.readLong(12);
   Kp = (float)KpMem*0.001;
   Ki = (float)KiMem*0.001;
-  Kd = (float)KdMem*0.001;
+  Kd = (float)KdMem*0.01;
   setPoint = (float)setPointMem*0.1;
-  
+  Serial.begin(9600);
   Serial1.begin(9600);
   pinMode(8, OUTPUT);
   digitalWrite(8,HIGH);
@@ -220,8 +222,9 @@ uint8_t Controller(float error)
   static int i;
   float integral;
   float der;
+  static float yOld;
   
-  der=error-errorOld;// Do the derivative over two samples - could be done on more samples or on a filtered signal instead...
+  der=error-errorOld;// Do the derivative over two samples - could be done on more samples or on a filtered signal instead... Essentially this is downsampling and thus kind of an increase of Kd as it is implemented here...
   if(i>1){
     errorOld = error;
     i=0;
@@ -229,24 +232,24 @@ uint8_t Controller(float error)
   i++;
 
   // Anti wind-up using clamping of the integrator
-  if(error<0)
+  if((yOld>limit && error > 0)|| (yOld<0 && error < 0))
   {
-    integral = 0;
+    integral = integralOld;
   }
   else
   {
     integral = integralOld + (error*Ki);
   }
  
-  y = (integral + Kp*error + Kd*der);
-  
+  y = (integral + Kp*error + Kd*der*0.5);// The 0.5 comes from using two samples to update der
+
+  yOld = y;
   if(y<0)
   {
     y=0;
   }
   if(y>limit)
   {
-    integral = integralOld;
     y=limit;
   }
   
@@ -426,7 +429,7 @@ void tuning()
     stateMachine = OFF;
     Serial1.print("x2.val=");Serial1.print((uint32_t)(Kp*1000));Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
     Serial1.print("x3.val=");Serial1.print((uint32_t)(Ki*1000));Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
-    Serial1.print("x4.val=");Serial1.print((uint32_t)(Kd*1000));Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
+    Serial1.print("x4.val=");Serial1.print((uint32_t)(Kd*100));Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
     Serial1.print("b5.pic=");Serial1.print(7);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);// Save icon is gray
     Serial1.print("va1.val=");Serial1.print(0);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
     Serial1.print("va2.val=");Serial1.print(0);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
