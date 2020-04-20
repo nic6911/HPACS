@@ -42,6 +42,8 @@ uint8_t tempLimit = 100;// We do not allow more than 100 degree temperatures
 float integralOld;
 float errorOld;
 float yOld;
+uint8_t cnt = 0;
+uint8_t Tsample = 5;// sampletime = Tsample x 1 second
 
 //********* SETUP OF NEXTION EVENTS ****************//
 NexButton b0 = NexButton(0,3,"b0");//AUTOTUNE
@@ -198,7 +200,12 @@ ISR(TIMER5_COMPA_vect){//timer5 interrupt 1Hz
  // State machine here
  if(stateMachine == ON)
  {
-  ontime = Controller(error);
+  if(cnt>(Tsample-1))// Downsampling the controller if desired
+  {
+	  ontime = Controller(error);
+	  cnt=0;
+  }
+  cnt++;
   initTuning = 1;
  }
  else if(stateMachine == OFF)
@@ -236,12 +243,8 @@ uint8_t Controller(float error)
   float integral;
   float der;
   
-  der=error-errorOld;// Do the derivative over two samples - could be done on more samples or on a filtered signal instead... Essentially this is downsampling and thus kind of an increase of Kd as it is implemented here...
-  if(i>1){
-    errorOld = error;
-    i=0;
-  }
-  i++;
+  der=error-errorOld;// 
+  errorOld = error;
 
   // Anti wind-up using clamping of the integrator
   if((yOld>limit && error > 0)|| (yOld<0 && error < 0))
@@ -252,8 +255,12 @@ uint8_t Controller(float error)
   {
     integral = integralOld + (error*Ki);
   }
+  if(integral > limit)//this may actually be needed if we have a very slow process. The D can give a negative term that allows the integrator to build up and exceed the limit theoretically...
+  {
+    integral = integralOld;
+  }
  
-  y = (integral + Kp*error + Kd*der*0.5);// The 0.5 comes from using two samples to update der
+  y = (integral + Kp*error + Kd*der);// 
 
   yOld = y;
   if(y<0)
@@ -442,8 +449,8 @@ void tuning()
     #endif
     #ifdef PICONTROL
     // PI-control
-    Kp = 0.45*Ku;//4.66
-    Ki = 0.54*Ku/Tu;//0.004
+    Kp = 0.45*Ku;
+    Ki = 0.54*Ku/Tu;
     Kd = 0;
     #endif
     #ifdef PDCONTROL
@@ -469,10 +476,12 @@ void tuning()
     #endif
     #ifdef NOOVERSHOOT
     // Ziegler Nichols no overshoot PID parameters with lowered Kd
-    Kp = Ku*0.2;
-    Ki = (0.4*Ku)/Tu;
+    Kp = Ku*0.2;//10.355Ku
+    Ki = (0.4*Ku)/Tu;//1380Tu
     Kd = Ku*Tu*0.06;
     #endif
+    Ki = Ki*Tsample;
+    Kd = Kd/Tsample;
     stateMachine = OFF;
     Serial1.print("x2.val=");Serial1.print((uint32_t)(Kp*1000));Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
     Serial1.print("x3.val=");Serial1.print((uint32_t)(Ki*1000));Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);

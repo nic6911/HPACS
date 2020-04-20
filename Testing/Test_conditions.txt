@@ -1,0 +1,8 @@
+Room temperature: ~23 degree
+Water volume before disturbance: 1.4 liter
+Added water volume at disturbance: ~0.15 liter
+Added water temperature: ~12 degrees
+
+Gains calculated on automatic tuning with resulting parameters:
+Tu: 1380
+Ku: 10.355
