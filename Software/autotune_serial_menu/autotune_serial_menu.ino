@@ -1,6 +1,5 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
-#include <Nextion.h>//Remember to go into config.h for the library and change Serial1 to Serial1 !
 #include <EEPROMex.h>
 
 // Defines
@@ -44,123 +43,26 @@ float errorOld;
 float yOld;
 uint8_t cnt = 0;
 uint8_t Tsample = 5;// sampletime = Tsample x 1 second
+bool logging = 0;
 
-//********* SETUP OF NEXTION EVENTS ****************//
-NexButton b0 = NexButton(0,3,"b0");//AUTOTUNE
-NexButton b4 = NexButton(0,23,"b4");//ON
-NexButton b1 = NexButton(0,24,"b1");//OFF
-NexButton b5 = NexButton(0,25,"b5");//SAVE
-NexNumber x2=NexNumber(0,6,"x2");
-NexNumber x3=NexNumber(0,7,"x3");
-NexNumber x4=NexNumber(0,31,"x4");
-NexNumber x0=NexNumber(0,2,"x0");
 
-NexTouch *nex_listen_list[] = 
-{
-  &b1,
-  &b4,
-  &b0,
-  &b5,
-  &x2,
-  &x3,
-  &x4,
-  &x0,
-  NULL
-};
-
-void b5PushCallback(void *ptr)
-{
-  b5.detachPush();  // Button press detached to avoid multiple presses to save
-  uint32_t setPointMem = 0;
-  uint32_t KpMem = 0;
-  uint32_t KiMem = 0;
-  uint32_t KdMem = 0;
-  x2.getValue(&KpMem);
-  Kp = (float)(KpMem*0.001);
-  x3.getValue(&KiMem);
-  Ki = (float)(KiMem*0.001);
-  x4.getValue(&KdMem);
-  Kd = (float)(KdMem*0.01);
-  x0.getValue(&setPointMem);
-  setPoint = (float)(setPointMem*0.1);
-  EEPROM.writeLong(0,KpMem);
-  EEPROM.writeLong(4,KiMem);
-  EEPROM.writeLong(8,KdMem);
-  EEPROM.writeLong(12,setPointMem);
-  Serial1.print("b5.pic=");Serial1.print(10);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
-}
-void b4PushCallback(void *ptr)
-{
-  uint32_t number2 = 0;
-  stateMachine = ON;
-  x0.getValue(&number2);
-  setPoint = (float)(number2*0.1);
-}
-
-void b1PushCallback(void *ptr)
-{
-  stateMachine = OFF;
-}
-
-void b0PushCallback(void *ptr)
-{
-  uint32_t number2 = 0;
-  stateMachine = AUTOTUNE;
-  x0.getValue(&number2);
-  setPoint = (float)(number2*0.1);
-}
-
-void x2PushCallback(void *ptr)
-{
-  b5.attachPush(b5PushCallback);// If someone may have eited a PID parameter we enable the save button again
-}
-
-void x3PushCallback(void *ptr)
-{
-  b5.attachPush(b5PushCallback);// If someone may have eited a PID parameter we enable the save button again
-}
-
-void x4PushCallback(void *ptr)
-{
-  b5.attachPush(b5PushCallback);// If someone may have eited a PID parameter we enable the save button again
-}
 
 void setup(){
-  Serial.begin(9600);
-  // Load PID and setpoint from EEPROM
-  uint32_t KpMem = EEPROM.readLong(0);
-  uint32_t KiMem = EEPROM.readLong(4);
-  uint32_t KdMem = EEPROM.readLong(8);
-  uint32_t setPointMem = EEPROM.readLong(12);
-  Kp = (float)KpMem*0.001;
-  Ki = (float)KiMem*0.001;
-  Kd = (float)KdMem*0.01;
-  setPoint = (float)setPointMem*0.1;
-  Serial1.begin(9600);
   //the pin 8 is only because I power my temp sensor from here - just remove it !
   pinMode(8, OUTPUT);
   digitalWrite(8,HIGH);
+  
+  Serial.begin(9600);
+  // Load PID and setpoint from EEPROM
+  Kp = EEPROM.readFloat(0);
+  Ki = EEPROM.readFloat(4);
+  Kd = EEPROM.readFloat(8);
+  setPoint = EEPROM.readFloat(12);
   sensors.begin();
   delay(1000);
   sensors.requestTemperatures(); // Send the command to get temperatures
   sensors.getTempCByIndex(0);
-  //Send loaded values to display
-  Serial1.print("x2.val=");Serial1.print(KpMem);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
-  Serial1.print("x3.val=");Serial1.print(KiMem);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
-  Serial1.print("x4.val=");Serial1.print(KdMem);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
-  Serial1.print("x0.val=");Serial1.print(setPointMem);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
-  Serial1.print("va1.val=");Serial1.print(0);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
-  Serial1.print("va2.val=");Serial1.print(0);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
-  Serial1.print("va3.val=");Serial1.print(0);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
-  // Attach pushbuttons from nextion
-  b4.attachPush(b4PushCallback);  // Button press
-  b1.attachPush(b1PushCallback);  // Button press
-  b0.attachPush(b0PushCallback);  // Button press
-  b5.attachPush(b5PushCallback);  // Button press
-  x2.attachPush(x2PushCallback);
-  x3.attachPush(x3PushCallback);
-  x4.attachPush(x4PushCallback);
-  
+ 
   //Setup the PWM for the SS relay
 cli();//stop interrupts
   DDRH |= (1 << DDH3);//D6 on arduino mega for PWM
@@ -196,45 +98,45 @@ sei();//allow interrupts
 }//end setup
 
 ISR(TIMER5_COMPA_vect){//timer5 interrupt 1Hz 
- sensors.requestTemperatures(); // Send the command to get temperatures
- Tmeas = sensors.getTempCByIndex(0);// Get temperature
- error = (setPoint-Tmeas);// Calculate error
- // State machine here
- if(stateMachine == ON)
- {
-  if(cnt>(Tsample-1))
+  sensors.requestTemperatures(); // Send the command to get temperatures
+  Tmeas = sensors.getTempCByIndex(0);// Get temperature
+  error = (setPoint-Tmeas);// Calculate error
+  // State machine here
+  if(stateMachine == ON)
   {
-  ontime = Controller(error);
-  cnt=0;
+    if(cnt>(Tsample-1))
+    {
+      ontime = Controller(error);
+      cnt=0;
+    }
+      cnt++;
+      initTuning = 1;
   }
-  cnt++;
-  initTuning = 1;
- }
- else if(stateMachine == OFF)
- {
+  else if(stateMachine == OFF)
+  {
   ontime = 0;
   initTuning = 1;
   // Reset controller
   integralOld = 0;
   errorOld = 0;
   yOld = 0;
- }
- else if(stateMachine == AUTOTUNE)
- {
+  }
+  else if(stateMachine == AUTOTUNE)
+  {
   tuning();
- }
-
- // Send temperature to display
- Serial1.print("x1.val=");Serial1.print((uint16_t)(Tmeas*10));Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
-
- if(Tmeas>tempLimit)// We do not allow more than the tempLimit !
- {
+  }
+  
+  if(Tmeas>tempLimit)// We do not allow more than the tempLimit !
+  {
   ontime = 0;
- }
-
- // Update PWM register
- OCR4A = map(ontime,0,100,0x0,0xFFFF);//Set PWM duty cycle
- Serial.println(Tmeas);
+  }
+  
+  // Update PWM register
+  OCR4A = map(ontime,0,100,0x0,0xFFFF);//Set PWM duty cycle
+  if(logging > 0)
+  { 
+  Serial.println(Tmeas);
+  }
 }
 
 //********* CONTROLLER ****************//
@@ -248,13 +150,14 @@ uint8_t Controller(float error)
   
   der=error-errorOld;// 
   errorOld = error;
+  
 //  if(Tmeas<0.7*setPoint)//If we are far from the setpoint we want to reset the integrator at first setpoint crossing to reduce overshoot
 //  {
 //    integralReset=1;
 //  }
 
   // Anti wind-up using clamping of the integrator
-  if((yOld>(limit) && error > 0)|| (yOld<0 && error < 0))
+  if((yOld>limit && error > 0)|| (yOld<0 && error < 0))
   {
     integral = integralOld;
   }
@@ -270,7 +173,7 @@ uint8_t Controller(float error)
 //  {
 //    integral = 0;
 //    integralReset=0;
-//  }
+//  }  
  
   y = (integral + Kp*error + Kd*der);// 
 
@@ -461,8 +364,8 @@ void tuning()
     #endif
     #ifdef PICONTROL
     // PI-control
-    Kp = 0.45*Ku;//4.66
-    Ki = 0.54*Ku/Tu;//0.004
+    Kp = 0.45*Ku;//
+    Ki = 0.54*Ku/Tu;//
     Kd = 0;
     #endif
     #ifdef PDCONTROL
@@ -495,17 +398,141 @@ void tuning()
     Ki = Ki*Tsample;
     Kd = Kd/Tsample;
     stateMachine = OFF;
-    Serial1.print("x2.val=");Serial1.print((uint32_t)(Kp*1000));Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
-    Serial1.print("x3.val=");Serial1.print((uint32_t)(Ki*1000));Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
-    Serial1.print("x4.val=");Serial1.print((uint32_t)(Kd*100));Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
-    Serial1.print("b5.pic=");Serial1.print(7);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);// Save icon is gray
-    Serial1.print("va1.val=");Serial1.print(0);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
-    Serial1.print("va2.val=");Serial1.print(0);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
-    Serial1.print("va3.val=");Serial1.print(0);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
-    b5.attachPush(b5PushCallback);  // Button press enabled to be able to save parameters
+    Serial.println("Tuning done");
   }
 }
 
+void printHelp()
+{
+  Serial.println(F("HPACS help menu:"));
+  Serial.println(F(""));
+  Serial.println(F("Show this help menu: 'H'"));
+  Serial.println(F("Get PID Parameters and setpoint: 'G'"));
+  Serial.println(F("Set new target: 'T=55.0'"));
+  Serial.println(F("Set Proportional constant: 'P=5'"));
+  Serial.println(F("Set Integral constant: 'I=0.01'"));
+  Serial.println(F("Set Differential constant: 'D=100'"));
+  Serial.println(F("Start temperature readout: 'L'"));
+  Serial.println(F("Save values in EEPROM: 'S'"));
+  Serial.println(F("Start process: 'N'"));
+  Serial.println(F("Stop process: 'F'"));
+  Serial.println(F("Start tuning: 'C'"));
+  Serial.println(F(""));
+  Serial.println(F(""));
+}
+
+void saveValues()
+{
+  EEPROM.writeFloat(0,Kp);
+  EEPROM.writeFloat(4,Ki);
+  EEPROM.writeFloat(8,Kd);
+  EEPROM.writeFloat(12,setPoint);  
+}
+
 void loop(){
-  nexLoop(nex_listen_list);  // Check for any touch event
+  // Menu structure for serial
+  printHelp();
+  while(1)
+  {
+  /* must be able to edit SP, Kd, Ki, Kp. Must be able to start tuning, stop and start controlling. Must be able to save values. */
+    if(Serial.available() > 0)
+    {
+      int input = Serial.read();
+  
+      switch(input)
+      {
+        case 'H':
+          printHelp();          
+          break;
+          
+        case 'G':
+          Serial.print("Target:");Serial.println(setPoint);
+          Serial.print("Kp:");Serial.println(Kp);
+          Serial.print("Ki:");Serial.println(Ki);
+          Serial.print("Kd:");Serial.println(Kd);
+          Serial.println(F(""));
+          Serial.println(F(""));
+          break;     
+
+        case 'T':
+          setPoint = Serial.parseFloat();
+          Serial.print("New Target:");Serial.println(setPoint);
+          Serial.println(F(""));
+          Serial.println(F(""));
+          break;
+          
+        case 'P':
+          Kp = Serial.parseFloat();
+          Serial.print("New Kp:");Serial.println(Kp);
+          Serial.println(F(""));
+          Serial.println(F(""));
+          break;
+
+        case 'I':
+          Kp = Serial.parseFloat();
+          Serial.print("New Ki:");Serial.println(Ki);
+          Serial.println(F(""));
+          Serial.println(F(""));
+          break;
+
+        case 'D':
+          Kp = Serial.parseFloat();
+          Serial.print("New Kd:");Serial.println(Kd);
+          Serial.println(F(""));
+          Serial.println(F(""));
+          break;
+          
+        case 'L':
+          if(logging < 1)
+          {
+            Serial.println("Temperature readout at 1 Hz starting - send T to stop");
+            Serial.println(F(""));
+            Serial.println(F(""));
+          }
+          else
+          {
+            Serial.println("Temperature readout stopped");
+            Serial.println(F(""));
+            Serial.println(F(""));
+          }
+          logging ^= 1;//toggle logging/temperature output
+          break;
+          
+        case 'S':
+          saveValues();
+          Serial.println("Values saved in EEPROM:");
+          Serial.print("Target:");Serial.println(setPoint);
+          Serial.print("Kp:");Serial.println(Kp);
+          Serial.print("Ki:");Serial.println(Ki);
+          Serial.print("Kd:");Serial.println(Kd);
+          Serial.println(F(""));
+          Serial.println(F(""));
+          break;
+
+        case 'N':
+          stateMachine = ON;
+          Serial.println("Process is now running, send F to stop");
+          Serial.println(F(""));
+          Serial.println(F(""));
+          break;
+
+        case 'F':
+          stateMachine = OFF;
+          Serial.println("Process is now stopped");
+          Serial.println(F(""));
+          Serial.println(F(""));
+          break;
+
+        case 'C':
+          stateMachine = AUTOTUNE;
+          Serial.println("Tuning initiated, send F to abort");
+          Serial.println(F(""));
+          Serial.println(F(""));
+          break;
+               
+        default:
+          break;
+      }
+    }
+  }
 }
