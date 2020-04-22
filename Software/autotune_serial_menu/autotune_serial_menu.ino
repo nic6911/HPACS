@@ -10,16 +10,6 @@
 #define ABOVE 1
 #define BELOW 0
 
-//********* CONTROL SELECTION ****************//
-// ONLY SELECT ONE !!!
-//#define PCONTROL
-//#define PICONTROL
-//#define PDCONTROL
-//#define CLASSICPID
-//#define PESSENCONTROL
-//#define SOMEOVERSHOOT
-#define NOOVERSHOOT
-
 // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
 OneWire oneWire(ONE_WIRE_BUS);
 
@@ -44,6 +34,9 @@ float yOld;
 uint8_t cnt = 0;
 uint8_t Tsample = 5;// sampletime = Tsample x 1 second
 bool logging = 0;
+/*********** Below two variables are slack on the autotune where multiple cycles must be within these limts to be accepted ! **********************/
+uint16_t timeVariation = 120;//Allowable cycle time variation in seconds - 
+float tempVariation = 2.0;// Allowable variation of temprature between cycles  - 
 
 
 
@@ -51,7 +44,6 @@ void setup(){
   //the pin 8 is only because I power my temp sensor from here - just remove it !
   pinMode(8, OUTPUT);
   digitalWrite(8,HIGH);
-  
   Serial.begin(9600);
   // Load PID and setpoint from EEPROM
   Kp = EEPROM.readFloat(0);
@@ -196,8 +188,6 @@ void tuning()
 {
   uint8_t cycles = 3;// How many proper cycles we want - can be put as an editable global
   float duty = 40;// How much dutycycle we want to do the tuning with - can be but as an editable global
-  uint16_t timeVariation = 90;//Allowable cycle time variation in seconds - can be but as an editable global
-  float tempVariation = 2.0;// Allowable variation of temprature between cycles  - can be but as an editable global
   uint32_t time1 = 0;// For calculating cycle time
   float Tu;// Ultimate period
   float Ku;// Ultimate gain
@@ -354,52 +344,81 @@ void tuning()
       avgDeltaTime += deltaTime[i]/cycles;
     }
     // Calculate ultimate period and gain
-    Tu = avgDeltaTime;
-    Ku = (4*duty)/(PI*avgDeltaT);
-    #ifdef PCONTROL
-    // P-control
-    Kp = 0.5*Ku;
-    Ki = 0;
-    Kd = 0;
-    #endif
-    #ifdef PICONTROL
-    // PI-control
-    Kp = 0.45*Ku;//
-    Ki = 0.54*Ku/Tu;//
-    Kd = 0;
-    #endif
-    #ifdef PDCONTROL
-    // PD-control
-    Kp = 0.8*Ku;
-    Ki = 0;
-    Kd = Ku*Tu*0.1;
-    #endif
-    #ifdef CLASSICPID
+    Tu = avgDeltaTime;//1800
+    Ku = (4*duty)/(PI*avgDeltaT);//23.16
+    EEPROM.writeFloat(16,Tu);
+    EEPROM.writeFloat(20,Ku);
+
+    //CLASSICPID
     Kp = 0.6*Ku;
     Ki = 1.2*Ku/Tu;
     Kd = Ku*Tu*0.075;
-    #endif
-    #ifdef PESSENCONTROL
-    Kp = 0.7*Ku;
-    Ki = 1.75*Ku/Tu;
-    Kd = Ku*Tu*0.105;
-    #endif
-    #ifdef SOMEOVERSHOOT
-    Kp = 0.333*Ku;
-    Ki = 0.666*Ku/Tu;
-    Kd = Ku*Tu*0.111;
-    #endif
-    #ifdef NOOVERSHOOT
-    // Ziegler Nichols no overshoot PID parameters with lowered Kd
-    Kp = Ku*0.2;//10.355Ku
-    Ki = (0.4*Ku)/Tu;//1380Tu
-    Kd = Ku*Tu*0.06;
-    #endif
+    
     Ki = Ki*Tsample;
     Kd = Kd/Tsample;
     stateMachine = OFF;
     Serial.println("Tuning done");
   }
+}
+
+void selectControl(int type)
+{
+  float Tu;
+  float Ku;
+  Tu = EEPROM.readFloat(16);
+  Ku = EEPROM.readFloat(20);
+  
+    if(type == 1)
+    {
+      // P-control
+      Kp = 0.5*Ku;
+      Ki = 0;
+      Kd = 0;
+    }
+    else if(type == 2)
+    {
+      // PI-control
+      Kp = 0.45*Ku;//
+      Ki = 0.54*Ku/Tu;//
+      Kd = 0;
+    }
+    else if(type == 3)
+    {
+      // PD-control
+      Kp = 0.8*Ku;
+      Ki = 0;
+      Kd = Ku*Tu*0.1;
+    }
+    else if(type == 4)
+    {
+      //Classic PID-control
+      Kp = 0.6*Ku;
+      Ki = 1.2*Ku/Tu;
+      Kd = Ku*Tu*0.075;
+    }
+    else if(type == 5)
+    {
+      // Pessen Control
+      Kp = 0.7*Ku;
+      Ki = 1.75*Ku/Tu;
+      Kd = Ku*Tu*0.105;
+    }
+    else if(type == 6)
+    {
+      // Some Overshoot
+      Kp = 0.333*Ku;
+      Ki = 0.666*Ku/Tu;
+      Kd = Ku*Tu*0.111;
+    }
+    else if(type == 7)
+    {
+      // No Overshoot
+      Kp = Ku*0.2;//10.355Ku
+      Ki = (0.4*Ku)/Tu;//1380Tu
+      Kd = Ku*Tu*0.06;
+    }
+    Ki = Ki*Tsample;
+    Kd = Kd/Tsample;
 }
 
 void printHelp()
@@ -417,6 +436,7 @@ void printHelp()
   Serial.println(F("Start process: 'N'"));
   Serial.println(F("Stop process: 'F'"));
   Serial.println(F("Start tuning: 'C'"));
+  Serial.println(F("Select controller type: 'K'"));
   Serial.println(F(""));
   Serial.println(F(""));
 }
@@ -529,6 +549,32 @@ void loop(){
           Serial.println(F(""));
           Serial.println(F(""));
           break;
+
+        case 'K':
+          Serial.println("Select a controller type:");
+          Serial.println(F(""));
+          Serial.println(F("P-control: '1'"));
+          Serial.println(F("PI-control: '2'"));
+          Serial.println(F("PD-control: '3'"));
+          Serial.println(F("PID-control: '4'"));
+          Serial.println(F("Pessen: '5'"));
+          Serial.println(F("Some overshoot: '6'"));
+          Serial.println(F("No overshoot: '7'"));
+          RETRY:
+          while(!Serial.available());
+          int type = Serial.parseInt();
+          if(type>0)
+          {
+            selectControl(type);
+            Serial.print("You selected:");Serial.println(type);
+            Serial.println(F(""));
+            Serial.println(F(""));
+            break;
+          }
+          else
+          {
+            goto RETRY;
+          }
                
         default:
           break;
