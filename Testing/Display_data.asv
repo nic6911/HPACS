@@ -29,7 +29,7 @@ overshoot = ((100/SP)*max(A))-100;
 time10=(find(A>((SP-A(1))*0.1)+A(1),1));
 time90=(find(A>((SP-A(1))*0.9)+A(1),1));
 risetime = timevect(time90)-timevect(time10);
-risetimetext = sprintf('Rise time: %.1f min',risetime);
+risetimetext = sprintf('Risetime: %.1f min',risetime);
 overshoottext = sprintf('Peak: %.1f %cC, Overshoot: %.1f %%',max(A),char(176),overshoot);
 plot(timevect,A)
 hold on
@@ -40,7 +40,7 @@ set(get(get(p,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
 plot([0 timevect(end)],[max(A) max(A)],'--','LineWidth',1.25)
 settlingtime = timevect(max(find(abs(A(1:100*60)-SP)>(SP*0.02))));
 plot([settlingtime settlingtime],[10 75],'--','LineWidth',1.25)
-settlingtimetext = sprintf('Settling time: %.1f min',settlingtime);
+settlingtimetext = sprintf('Settlingtime: %.1f min',settlingtime);
 legend('Temperature','SP=57.5\circC',risetimetext,overshoottext,settlingtimetext,'location','southeast')
 grid on
 set(gcf,'color','w');
@@ -63,7 +63,7 @@ overshoot = ((100/SP)*max(A))-100;
 time10=(find(A>((SP-A(1))*0.1)+A(1),1));
 time90=(find(A>((SP-A(1))*0.9)+A(1),1));
 risetime = timevect(time90)-timevect(time10);
-risetimetext = sprintf('Rise time: %.1f min',risetime);
+risetimetext = sprintf('Risetime: %.1f min',risetime);
 overshoottext = sprintf('Peak: %.1f %cC, Overshoot: %.1f %%',max(A),char(176),overshoot);
 plot(timevect,A)
 hold on
@@ -74,7 +74,7 @@ set(get(get(p,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
 plot([0 timevect(end)],[max(A) max(A)],'--','LineWidth',1.25)
 settlingtime = timevect(max(find(abs(A(1:161*60)-SP)>(SP*0.02))));
 plot([settlingtime settlingtime],[10 75],'--','LineWidth',1.25)
-settlingtimetext = sprintf('Settling time: %.1f min',settlingtime);
+settlingtimetext = sprintf('Settlingtime: %.1f min',settlingtime);
 legend('Temperature','SP=55\circC',risetimetext,overshoottext,settlingtimetext,'location','southeast')
 grid on
 set(gcf,'color','w');
@@ -97,7 +97,7 @@ overshoot = ((100/SP)*max(A))-100;
 time10=(find(A>((SP-A(1))*0.1)+A(1),1));
 time90=(find(A>((SP-A(1))*0.9)+A(1),1));
 risetime = timevect(time90)-timevect(time10);
-risetimetext = sprintf('Rise time: %.1f min',risetime);
+risetimetext = sprintf('Risetime: %.1f min',risetime);
 overshoottext = sprintf('Peak: %.1f %cC, Overshoot: %.1f %%',max(A),char(176),overshoot);
 plot(timevect,A)
 hold on
@@ -106,9 +106,9 @@ p = plot([timevect(time10) timevect(time10)],[A(time10) A(time10)],'.','LineWidt
 plot([timevect(time90) timevect(time90)],[A(time90) A(time90)],'.','LineWidth',1,'Color',[0,0,0])
 set(get(get(p,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
 plot([0 timevect(end)],[max(A) max(A)],'--','LineWidth',1.25)
-settlingtime = timevect(max(find(abs(A(1:66*60)-SP)>(SP*0.02))));
+settlingtime = timevect(max(find(abs(A(1:end)-SP)>(SP*0.02))));
 plot([settlingtime settlingtime],[10 75],'--','LineWidth',1.25)
-settlingtimetext = sprintf('Settling time: %.1f min',settlingtime);
+settlingtimetext = sprintf('Settlingtime: %.1f min',settlingtime);
 legend('Temperature','SP=55\circC',risetimetext,overshoottext,settlingtimetext,'location','southeast')
 grid on
 set(gcf,'color','w');

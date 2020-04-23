@@ -1,8 +1,9 @@
-Room temperature: ~23 degree
-Water volume before disturbance: 1.4 liter
-Added water volume at disturbance: ~0.15 liter
+Room temperature: ~25 degree
+Water volume before disturbance: ~4 liter
+Added water volume at disturbance: ~0.4 liter
 Added water temperature: ~12 degrees
+Fluid container: Pot with lid (not fully closed)
 
 Gains calculated on automatic tuning with resulting parameters:
-Tu: 1380
-Ku: 10.355
+Tu: 1796
+Ku: 23.282

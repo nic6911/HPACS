@@ -138,8 +138,8 @@ uint8_t Controller(float error)
   float limit = 100.0;
   float y;
   float integral;
-  static float der = 0;
-  float alpha = 0.4;//Alpha = 1 equals no filtering whereas alpha = 0.1 is a lot of low-pass filtering...
+  static float der;
+  float alpha = 0.75;//Alpha = 1 equals no filtering whereas alpha = 0.1 is a lot of low-pass filtering...
   
   der = der + alpha*((error-errorOld) - der);
   
@@ -411,7 +411,7 @@ void selectControl(int type)
     Kd = Kd/Tsample;
 }
 
-void printHelp()
+void printHelp(void)
 {
   Serial.println(F("HPACS help menu:"));
   Serial.println(F(""));
@@ -431,7 +431,7 @@ void printHelp()
   Serial.println(F(""));
 }
 
-void saveValues()
+void saveValues(void)
 {
   EEPROM.writeFloat(0,Kp);
   EEPROM.writeFloat(4,Ki);
@@ -439,11 +439,21 @@ void saveValues()
   EEPROM.writeFloat(12,setPoint);  
 }
 
+void checkSensor(void)
+{
+  if(Tmeas < 0)
+  {
+    stateMachine = OFF;
+  }
+  //check also if the temperature is below setpoint, and if, then if it is moving upwards when ontime > 0 for some time
+}
+
 void loop(){
   // Menu structure for serial
   printHelp();
   while(1)
   {
+    checkSensor();
   /* must be able to edit SP, Kd, Ki, Kp. Must be able to start tuning, stop and start controlling. Must be able to save values. */
     if(Serial.available() > 0)
     {
