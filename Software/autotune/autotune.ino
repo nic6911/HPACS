@@ -242,38 +242,30 @@ uint8_t Controller(float error)
 {
   float limit = 100.0;
   float y;
-//  static int integralReset = 0;
   float integral;
-  float der;
+  static float der = 0;
+  float alpha = 0.4;//Alpha = 1 equals no filtering whereas alpha = 0.1 is a lot of low-pass filtering...
   
-  der=error-errorOld;// 
+  der = der + alpha*((error-errorOld) - der);
+  
   errorOld = error;
-//  if(Tmeas<0.7*setPoint)//If we are far from the setpoint we want to reset the integrator at first setpoint crossing to reduce overshoot
-//  {
-//    integralReset=1;
-//  }
 
   // Anti wind-up using clamping of the integrator
-  if((yOld>(limit) && error > 0)|| (yOld<0 && error < 0))
+  if((yOld>limit && error > 0)|| (yOld<0 && error < 0))
   {
     integral = integralOld;
   }
   else
   {
-    integral = integralOld + (error*Ki);
+    integral = (integralOld + (error*Tsample))*Ki;
   }
   if(integral > limit)//this may actually be needed if we have a very slow process. The D can give a negative term that allows the integrator to build up and exceed the limit theoretically...
   {
     integral = integralOld;
   }
-//  if(integralReset==1 && error<0)
-//  {
-//    integral = 0;
-//    integralReset=0;
-//  }
- 
-  y = (integral + Kp*error + Kd*der);// 
 
+  y = (integral + Kp*error + Kd*der);// 
+  
   yOld = y;
   if(y<0)
   {
@@ -492,7 +484,7 @@ void tuning()
     Ki = (0.4*Ku)/Tu;//1380Tu
     Kd = Ku*Tu*0.06;
     #endif
-    Ki = Ki*Tsample;
+    Ki = Ki;
     Kd = Kd/Tsample;
     stateMachine = OFF;
     Serial1.print("x2.val=");Serial1.print((uint32_t)(Kp*1000));Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);

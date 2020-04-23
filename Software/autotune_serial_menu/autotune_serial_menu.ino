@@ -41,10 +41,11 @@ float tempVariation = 2.0;// Allowable variation of temprature between cycles  -
 
 
 void setup(){
+
   //the pin 8 is only because I power my temp sensor from here - just remove it !
   pinMode(8, OUTPUT);
   digitalWrite(8,HIGH);
-  Serial.begin(9600);
+  Serial.begin(250000);
   // Load PID and setpoint from EEPROM
   Kp = EEPROM.readFloat(0);
   Ki = EEPROM.readFloat(4);
@@ -136,17 +137,13 @@ uint8_t Controller(float error)
 {
   float limit = 100.0;
   float y;
-//  static int integralReset = 0;
   float integral;
-  float der;
+  static float der = 0;
+  float alpha = 0.4;//Alpha = 1 equals no filtering whereas alpha = 0.1 is a lot of low-pass filtering...
   
-  der=error-errorOld;// 
+  der = der + alpha*((error-errorOld) - der);
+  
   errorOld = error;
-  
-//  if(Tmeas<0.7*setPoint)//If we are far from the setpoint we want to reset the integrator at first setpoint crossing to reduce overshoot
-//  {
-//    integralReset=1;
-//  }
 
   // Anti wind-up using clamping of the integrator
   if((yOld>limit && error > 0)|| (yOld<0 && error < 0))
@@ -155,20 +152,15 @@ uint8_t Controller(float error)
   }
   else
   {
-    integral = integralOld + (error*Ki);
+    integral = (integralOld + (error*Tsample))*Ki;
   }
   if(integral > limit)//this may actually be needed if we have a very slow process. The D can give a negative term that allows the integrator to build up and exceed the limit theoretically...
   {
     integral = integralOld;
   }
-//  if(integralReset==1 && error<0)
-//  {
-//    integral = 0;
-//    integralReset=0;
-//  }  
- 
-  y = (integral + Kp*error + Kd*der);// 
 
+  y = (integral + Kp*error + Kd*der);// 
+  
   yOld = y;
   if(y<0)
   {
@@ -354,7 +346,6 @@ void tuning()
     Ki = 1.2*Ku/Tu;
     Kd = Ku*Tu*0.075;
     
-    Ki = Ki*Tsample;
     Kd = Kd/Tsample;
     stateMachine = OFF;
     Serial.println("Tuning done");
@@ -415,9 +406,8 @@ void selectControl(int type)
       // No Overshoot
       Kp = Ku*0.2;//10.355Ku
       Ki = (0.4*Ku)/Tu;//1380Tu
-      Kd = Ku*Tu*0.06;
+      Kd = Ku*Tu*0.067;
     }
-    Ki = Ki*Tsample;
     Kd = Kd/Tsample;
 }
 
@@ -467,9 +457,9 @@ void loop(){
           
         case 'G':
           Serial.print("Target:");Serial.println(setPoint);
-          Serial.print("Kp:");Serial.println(Kp);
-          Serial.print("Ki:");Serial.println(Ki);
-          Serial.print("Kd:");Serial.println(Kd);
+          Serial.print("Kp:");Serial.println(Kp,4);
+          Serial.print("Ki:");Serial.println(Ki,4);
+          Serial.print("Kd:");Serial.println(Kd,4);
           Serial.println(F(""));
           Serial.println(F(""));
           break;     
@@ -483,21 +473,21 @@ void loop(){
           
         case 'P':
           Kp = Serial.parseFloat();
-          Serial.print("New Kp:");Serial.println(Kp);
+          Serial.print("New Kp:");Serial.println(Kp,4);
           Serial.println(F(""));
           Serial.println(F(""));
           break;
 
         case 'I':
           Kp = Serial.parseFloat();
-          Serial.print("New Ki:");Serial.println(Ki);
+          Serial.print("New Ki:");Serial.println(Ki,4);
           Serial.println(F(""));
           Serial.println(F(""));
           break;
 
         case 'D':
           Kp = Serial.parseFloat();
-          Serial.print("New Kd:");Serial.println(Kd);
+          Serial.print("New Kd:");Serial.println(Kd,4);
           Serial.println(F(""));
           Serial.println(F(""));
           break;
@@ -522,9 +512,9 @@ void loop(){
           saveValues();
           Serial.println("Values saved in EEPROM:");
           Serial.print("Target:");Serial.println(setPoint);
-          Serial.print("Kp:");Serial.println(Kp);
-          Serial.print("Ki:");Serial.println(Ki);
-          Serial.print("Kd:");Serial.println(Kd);
+          Serial.print("Kp:");Serial.println(Kp,4);
+          Serial.print("Ki:");Serial.println(Ki,4);
+          Serial.print("Kd:");Serial.println(Kd,4);
           Serial.println(F(""));
           Serial.println(F(""));
           break;
