@@ -139,7 +139,7 @@ uint8_t Controller(float error)
   float y;
   float integral;
   static float der;
-  float alpha = 0.75;//Alpha = 1 equals no filtering whereas alpha = 0.1 is a lot of low-pass filtering...
+  float alpha = 0.5;//Alpha = 1 equals no filtering whereas alpha = 0.1 is a lot of low-pass filtering...
   
   der = der + alpha*((error-errorOld) - der);
   
