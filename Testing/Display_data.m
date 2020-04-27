@@ -190,3 +190,29 @@ set(gcf,'color','w');
 set(gcf,'PaperUnits','inches','PaperPosition',[0 0 16 9])
 print('Pessen_55','-dpng','-r900')
 close all
+
+%%
+A = load("Pessen_55_4l_sous_vide.txt");
+SP=55;
+timevect = 0:1:length(A)-1;
+timevect=timevect./60;
+plot(timevect,A)
+hold on
+plot([0 timevect(end)],[SP-1 SP-1],'--','LineWidth',1.25)
+plot([0 timevect(end)],[SP SP],'--','LineWidth',1.25)
+plot([0 timevect(end)],[SP+1 SP+1],'--','LineWidth',1.25)
+plot([66 66],[10 60],'--','LineWidth',1.25)
+plot([284.7 284.7],[10 60],'--','LineWidth',1.25)
+plot([464.3 464.3],[10 60],'--','LineWidth',1.25)
+plot([556.1 556.1],[10 60],'--','LineWidth',1.25)
+grid on
+legend('Temperature','54\circC','SP=55\circC','56\circC','Cold water added','Meat added','Opening lid and moving stuff around','Bearnaise added','location','southeast')
+set(gcf,'color','w');
+xlabel('Time [min]')
+ylabel('Temperature [\circC]')
+title('Pessen Integral Rule PID')
+%%
+set(gcf,'color','w');
+set(gcf,'PaperUnits','inches','PaperPosition',[0 0 16 9])
+print('Pessen_55_sous_vide','-dpng','-r900')
+close all
