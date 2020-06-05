@@ -17,9 +17,9 @@
 //#define PICONTROL
 //#define PDCONTROL
 //#define CLASSICPID
-//#define PESSENCONTROL
+#define PESSENCONTROL
 //#define SOMEOVERSHOOT
-#define NOOVERSHOOT
+//#define NOOVERSHOOT
 
 // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
 OneWire oneWire(ONE_WIRE_BUS);
@@ -80,7 +80,7 @@ void b5PushCallback(void *ptr)
   x3.getValue(&KiMem);
   Ki = (float)(KiMem*0.001);
   x4.getValue(&KdMem);
-  Kd = (float)(KdMem*0.01);
+  Kd = (float)(KdMem*0.1);
   x0.getValue(&setPointMem);
   setPoint = (float)(setPointMem*0.1);
   EEPROM.writeLong(0,KpMem);
@@ -132,14 +132,27 @@ void setup(){
   uint32_t KiMem = EEPROM.readLong(4);
   uint32_t KdMem = EEPROM.readLong(8);
   uint32_t setPointMem = EEPROM.readLong(12);
+  if(KpMem>32000)//limit size for the HMI not to fuck up
+  {
+    KpMem=32000;
+  }
+  if(KiMem>32000)//limit size for the HMI not to fuck up
+  {
+    KiMem=32000;
+  }
+  if(KdMem>32000)//limit size for the HMI not to fuck up
+  {
+    KdMem=32000;
+  }
+  if(setPointMem>1000)
+  {
+    setPointMem=1000;
+  }  
   Kp = (float)KpMem*0.001;
   Ki = (float)KiMem*0.001;
-  Kd = (float)KdMem*0.01;
+  Kd = (float)KdMem*0.1;
   setPoint = (float)setPointMem*0.1;
   Serial1.begin(9600);
-  //the pin 8 is only because I power my temp sensor from here - just remove it !
-  pinMode(8, OUTPUT);
-  digitalWrite(8,HIGH);
   sensors.begin();
   delay(1000);
   sensors.requestTemperatures(); // Send the command to get temperatures
@@ -234,7 +247,6 @@ ISR(TIMER5_COMPA_vect){//timer5 interrupt 1Hz
 
  // Update PWM register
  OCR4A = map(ontime,0,100,0x0,0xFFFF);//Set PWM duty cycle
- Serial.println(Tmeas);
 }
 
 //********* CONTROLLER ****************//
@@ -487,9 +499,21 @@ void tuning()
     Ki = Ki;
     Kd = Kd/Tsample;
     stateMachine = OFF;
+    if(Kp>32)//limit size for the HMI not to fuck up
+    {
+      Kp=32;
+    }
+    if(Ki>32)//limit size for the HMI not to fuck up
+    {
+      Ki=32;
+    }
+    if(Kd>3200)//limit size for the HMI not to fuck up
+    {
+      Kd=3200;
+    }
     Serial1.print("x2.val=");Serial1.print((uint32_t)(Kp*1000));Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
     Serial1.print("x3.val=");Serial1.print((uint32_t)(Ki*1000));Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
-    Serial1.print("x4.val=");Serial1.print((uint32_t)(Kd*100));Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
+    Serial1.print("x4.val=");Serial1.print((uint32_t)(Kd*10));Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
     Serial1.print("b5.pic=");Serial1.print(7);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);// Save icon is gray
     Serial1.print("va1.val=");Serial1.print(0);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
     Serial1.print("va2.val=");Serial1.print(0);Serial1.write(0xff);Serial1.write(0xff);Serial1.write(0xff);
