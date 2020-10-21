@@ -269,7 +269,7 @@ uint8_t Controller(float error)
   }
   else
   {
-    integral = (integralOld + (error*Tsample))*Ki;
+    integral = integralOld + (error*Tsample)*Ki;
   }
   if(integral > limit)//this may actually be needed if we have a very slow process. The D can give a negative term that allows the integrator to build up and exceed the limit theoretically...
   {
