@@ -1,11 +1,11 @@
 # HPACS
 Hot Plate Automatic Control System
+Videos: https://youtu.be/TlVIJFjHHOQ and https://youtu.be/JZ1UPQ5lsyg
 
 ## Purpose
 This project aims at providing a simple intuitive way of understanding how to do Automatic PID tuning using a heater. What I have made is based on the Åström–Hägglund method for deriving parameters using bang-bang control to reveal system characteristics and subsequenctly chose parameters based on this knowledge. There is nothing secret to it and info can be found here: https://en.wikipedia.org/wiki/PID_controller#Loop_tuning
 And for chosing parameters you can read a bit here: https://en.wikipedia.org/wiki/Ziegler%E2%80%93Nichols_method
 
-Now, to make it really nice I will try to provide some easy to understand documentation on how the tuning and control functions at some point. I.e. explaining why and how this stuff works !
 To make it nice a Nextion 3.2" HMI interface is added for user input and displaying different variables real-time. BUT I also made a Serial terminal version of the library which makes the project way cheaper !
 
 The real background story is that partly I promised my dad to make a temperature control for melting bees wax, partly I wanted to refresh my basic control theory and finally I wanted to look into auto tuning of PID controllers. On the side I also managed to use it for Sous Vide making nice steaks and Bearnaise sauce as part of the testing !
