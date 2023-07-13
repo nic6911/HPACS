@@ -4,6 +4,10 @@ Videos: https://youtu.be/TlVIJFjHHOQ and https://youtu.be/JZ1UPQ5lsyg
 
 For a bit more details look here: https://www.instructables.com/Hot-Plate-Automatic-Control-System-HPACS/
 
+If you like then please
+
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://bmc.link/nic6911w)
+
 ## Purpose
 This project aims at providing a simple intuitive way of understanding how to do Automatic PID tuning using a heater. What I have made is based on the Åström–Hägglund method for deriving parameters using bang-bang control to reveal system characteristics and subsequenctly chose parameters based on this knowledge. There is nothing secret to it and info can be found here: https://en.wikipedia.org/wiki/PID_controller#Loop_tuning
 And for chosing parameters you can read a bit here: https://en.wikipedia.org/wiki/Ziegler%E2%80%93Nichols_method
