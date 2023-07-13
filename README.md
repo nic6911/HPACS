@@ -30,12 +30,19 @@ I use:
 * An Arduino Mega 
 * (Optional) A Nextion 3.2" HMI interface/display
 
-## License
-For my sake this license will apply:
-<a href="http://www.wtfpl.net/"><img
-       src="http://www.wtfpl.net/wp-content/uploads/2012/12/wtfpl-badge-4.png"
-       width="80" height="15" alt="WTFPL" /></a>
-       
-However, I have found the buttons for the HMI here: https://www.uihere.com/free-graphics/off-and-on-button-set-ai-eps-file-131170
+This work is licensed under a
+[Creative Commons Attribution-ShareAlike 4.0 International License][cc-by-sa].
+
+[![CC BY-SA 4.0][cc-by-sa-image]][cc-by-sa]
+
+[cc-by-sa]: http://creativecommons.org/licenses/by-sa/4.0/
+[cc-by-sa-image]: https://licensebuttons.net/l/by-sa/4.0/88x31.png
+[cc-by-sa-shield]: https://img.shields.io/badge/License-CC%20BY--SA%204.0-lightgrey.svg
+
+Find more of my work here:  
+https://youtube.com/user/wan46696  
+https://www.instructables.com/member/nicengineering/  
+        
+License note: However, I have found the buttons for the HMI here: https://www.uihere.com/free-graphics/off-and-on-button-set-ai-eps-file-131170
 Where it says "For Personal Use" under licensing - I.e. no commercialization of HPACS unless you change those buttons ;)
 Also the disk icon and the hot surface warning I found somewhere at some point - but I can't seem to find them again...
